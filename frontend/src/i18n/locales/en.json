@@ -1,0 +1,66 @@
+{
+  "app": {
+    "title": "AbacusLearn",
+    "home": "Home",
+    "formula": "Formula",
+    "classes": "Classes",
+    "login": "Login",
+    "logout": "Logout",
+    "teacher": "Teacher Dashboard"
+  },
+  "abacus": {
+    "title": "Virtual Abacus",
+    "class": "Class",
+    "level": "Level",
+    "reset": "Reset",
+    "randomProblem": "Random Problem",
+    "showSolution": "Show Solution",
+    "checkAnswer": "Check Answer",
+    "correct": "Correct!",
+    "wrong": "Wrong! Try again.",
+    "currentValue": "Current Value",
+    "expectedValue": "Expected Value"
+  },
+  "info": {
+    "whatIsAbacus": {
+      "title": "What is Abacus?",
+      "content": "An abacus is a calculating tool that has been used for centuries. It consists of rods and beads, where each rod represents a place value (ones, tens, hundreds, etc.). Upper beads represent 5, and lower beads represent 1."
+    },
+    "benefits": {
+      "title": "Benefits of Learning Abacus",
+      "content": "Learning abacus helps improve mental calculation, concentration, memory, and overall mathematical skills. It enhances both left and right brain development."
+    },
+    "howToRead": {
+      "title": "How to Read an Abacus",
+      "content": "To read an abacus, count the beads on each rod. Each upper bead counts as 5, and each lower bead counts as 1. Multiply by the place value (1, 10, 100, etc.) and sum all rods to get the total number."
+    }
+  },
+  "classes": {
+    "syllabus": "Syllabus",
+    "topics": "Topics"
+  },
+  "teacher": {
+    "dashboard": "Teacher Dashboard",
+    "courses": "Courses",
+    "chapters": "Chapters",
+    "createChapter": "Create Chapter",
+    "editChapter": "Edit Chapter",
+    "title": "Title",
+    "summary": "Summary",
+    "level": "Level",
+    "sequence": "Sequence",
+    "published": "Published",
+    "save": "Save",
+    "cancel": "Cancel",
+    "solution": "Solution",
+    "attachments": "Attachments",
+    "uploadFile": "Upload File"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "login": "Login",
+    "signup": "Sign Up"
+  }
+}
+

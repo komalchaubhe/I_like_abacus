@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  role         String   @default("STUDENT") // STUDENT, TEACHER, ADMIN
+  locale       String   @default("en")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  courses  Course[]
+  chapters Chapter[]
+  solutions Solution[]
+  audits   Audit[]
+
+  @@map("users")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String   // JSON string: { en: "...", hi: "...", mr: "..." }
+  description String   // JSON string: { en: "...", hi: "...", mr: "..." }
+  ownerId     String   @map("owner_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  chapters Chapter[]
+
+  @@map("courses")
+}
+
+model Chapter {
+  id          String   @id @default(cuid())
+  courseId    String   @map("course_id")
+  seq         Int
+  title       String   // JSON string: { en: "...", hi: "...", mr: "..." }
+  summary     String   // JSON string: { en: "...", hi: "...", mr: "..." }
+  level       Int
+  isPublished Boolean  @default(false) @map("is_published")
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  creator   User       @relation(fields: [createdBy], references: [id])
+  solutions Solution[]
+
+  @@unique([courseId, seq])
+  @@map("chapters")
+}
+
+model Solution {
+  id           String   @id @default(cuid())
+  chapterId    String   @map("chapter_id")
+  content      String
+  contentFormat String  @default("html") @map("content_format")
+  attachments  String   // JSON string: Array of { url: string, filename: string, type: string }
+  version      Int      @default(1)
+  createdBy    String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  creator User    @relation(fields: [createdBy], references: [id])
+
+  @@map("solutions")
+}
+
+model Audit {
+  id         String   @id @default(cuid())
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  action     String
+  userId     String?  @map("user_id")
+  payload    String?  // JSON string
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audits")
+}
+
