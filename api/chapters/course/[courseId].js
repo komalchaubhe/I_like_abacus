@@ -2,12 +2,18 @@ import prisma from '../../../lib/prisma.js';
 import { parseJsonFields, stringifyJsonFields } from '../../../lib/jsonHelper.js';
 import { authenticate, optionalAuth, requireRole } from '../../../lib/auth.js';
 import { handleCors, jsonResponse, errorResponse } from '../../../lib/response.js';
+import { extractIdFromUrl } from '../../../lib/url.js';
+import { parseRequestBody } from '../../../lib/url.js';
 
 export default async function handler(req) {
   const cors = handleCors(req);
   if (cors) return cors;
 
-  const courseId = req.url.split('/course/')[1]?.split('?')[0];
+  // Fix: Better URL parameter extraction
+  const courseId = extractIdFromUrl(req.url, /\/api\/chapters\/course\/([^\/\?]+)/);
+  if (!courseId) {
+    return errorResponse('Invalid course ID', 400);
+  }
 
   if (req.method === 'GET') {
     try {
@@ -40,7 +46,8 @@ export default async function handler(req) {
       const parsedChapters = chapters.map(ch => parseJsonFields(ch, ['title', 'summary']));
       return jsonResponse(parsedChapters);
     } catch (error) {
-      return errorResponse(error.message, 500);
+      // Fix: Proper error handling
+      return errorResponse(error, 500);
     }
   }
 
@@ -56,7 +63,8 @@ export default async function handler(req) {
     }
 
     try {
-      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      // Fix: Safe JSON parsing
+      const body = parseRequestBody(req.body);
       const { seq, title, summary, level, isPublished } = body;
 
       if (!title || !summary || level === undefined) {
@@ -104,7 +112,8 @@ export default async function handler(req) {
       const parsedChapter = parseJsonFields(chapter, ['title', 'summary']);
       return jsonResponse(parsedChapter, 201);
     } catch (error) {
-      return errorResponse(error.message, 500);
+      // Fix: Proper error handling
+      return errorResponse(error, 500);
     }
   }
 

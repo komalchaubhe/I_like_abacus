@@ -2,6 +2,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import { handleCors, jsonResponse, errorResponse } from '../lib/response.js';
+import { getJwtSecret } from '../lib/env.js';
+import { validateEmail } from '../lib/validate.js';
+import { parseRequestBody } from '../lib/url.js';
 
 export default async function handler(req) {
   const cors = handleCors(req);
@@ -12,18 +15,25 @@ export default async function handler(req) {
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    // Fix: Safe JSON parsing with error handling
+    const body = parseRequestBody(req.body);
     const { email, password } = body;
 
+    // Fix: Input validation
     if (!email || !password) {
       return errorResponse('Email and password are required', 400);
     }
 
+    if (!validateEmail(email)) {
+      return errorResponse('Invalid email format', 400);
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email: email.trim().toLowerCase() }
     });
 
     if (!user) {
+      // Security: Don't reveal if user exists
       return errorResponse('Invalid credentials', 401);
     }
 
@@ -33,9 +43,11 @@ export default async function handler(req) {
       return errorResponse('Invalid credentials', 401);
     }
 
+    // Fix: Validate JWT_SECRET before using
+    const jwtSecret = getJwtSecret();
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: '7d' }
     );
 
@@ -50,7 +62,8 @@ export default async function handler(req) {
       token
     });
   } catch (error) {
-    return errorResponse(error.message, 500);
+    // Fix: Proper error handling (won't expose internal errors in production)
+    return errorResponse(error, 500);
   }
 }
 

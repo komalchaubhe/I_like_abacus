@@ -2,6 +2,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import { handleCors, jsonResponse, errorResponse } from '../lib/response.js';
+import { getJwtSecret } from '../lib/env.js';
+import { validateEmail, validatePassword, validateRole } from '../lib/validate.js';
+import { parseRequestBody } from '../lib/url.js';
 
 export default async function handler(req) {
   const cors = handleCors(req);
@@ -12,15 +15,35 @@ export default async function handler(req) {
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    // Fix: Safe JSON parsing
+    const body = parseRequestBody(req.body);
     const { email, password, name, role = 'STUDENT' } = body;
 
+    // Fix: Input validation
     if (!email || !password || !name) {
       return errorResponse('Email, password, and name are required', 400);
     }
 
+    if (!validateEmail(email)) {
+      return errorResponse('Invalid email format', 400);
+    }
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return errorResponse(passwordValidation.error, 400);
+    }
+
+    // Fix: Validate and normalize role
+    const normalizedRole = role.toUpperCase();
+    if (!validateRole(normalizedRole)) {
+      return errorResponse('Invalid role. Must be STUDENT, TEACHER, or ADMIN', 400);
+    }
+
+    // Fix: Normalize email (lowercase, trimmed)
+    const normalizedEmail = email.trim().toLowerCase();
+
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email: normalizedEmail }
     });
 
     if (existingUser) {
@@ -31,10 +54,10 @@ export default async function handler(req) {
 
     const user = await prisma.user.create({
       data: {
-        email,
-        name,
+        email: normalizedEmail,
+        name: name.trim(),
         passwordHash,
-        role: role.toUpperCase()
+        role: normalizedRole
       },
       select: {
         id: true,
@@ -45,15 +68,18 @@ export default async function handler(req) {
       }
     });
 
+    // Fix: Validate JWT_SECRET before using
+    const jwtSecret = getJwtSecret();
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: '7d' }
     );
 
     return jsonResponse({ user, token }, 201);
   } catch (error) {
-    return errorResponse(error.message, 500);
+    // Fix: Proper error handling
+    return errorResponse(error, 500);
   }
 }
 

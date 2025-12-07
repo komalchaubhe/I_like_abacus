@@ -2,6 +2,7 @@ import prisma from '../lib/prisma.js';
 import { parseJsonFields, stringifyJsonFields } from '../lib/jsonHelper.js';
 import { authenticate, optionalAuth, requireRole, requireOwnerOrAdmin } from '../lib/auth.js';
 import { handleCors, jsonResponse, errorResponse } from '../lib/response.js';
+import { parseRequestBody } from '../lib/url.js';
 
 export default async function handler(req) {
   const cors = handleCors(req);
@@ -34,7 +35,8 @@ export default async function handler(req) {
 
       return jsonResponse(parsedCourses);
     } catch (error) {
-      return errorResponse(error.message, 500);
+      // Fix: Proper error handling
+      return errorResponse(error, 500);
     }
   }
 
@@ -51,7 +53,8 @@ export default async function handler(req) {
     }
 
     try {
-      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      // Fix: Safe JSON parsing
+      const body = parseRequestBody(req.body);
       const { title, description } = body;
 
       if (!title || !description) {
@@ -73,7 +76,8 @@ export default async function handler(req) {
       const parsedCourse = parseJsonFields(course, ['title', 'description']);
       return jsonResponse(parsedCourse, 201);
     } catch (error) {
-      return errorResponse(error.message, 500);
+      // Fix: Proper error handling
+      return errorResponse(error, 500);
     }
   }
 

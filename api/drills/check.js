@@ -1,4 +1,6 @@
 import { handleCors, jsonResponse, errorResponse } from '../lib/response.js';
+import { validateAbacusState } from '../lib/validate.js';
+import { parseRequestBody } from '../lib/url.js';
 
 export default async function handler(req) {
   const cors = handleCors(req);
@@ -9,11 +11,24 @@ export default async function handler(req) {
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    // Fix: Safe JSON parsing
+    const body = parseRequestBody(req.body);
     const { abacusState, expectedNumber } = body;
 
     if (!abacusState || expectedNumber === undefined) {
       return errorResponse('Abacus state and expected number are required', 400);
+    }
+
+    // Fix: Validate abacus state structure
+    const validation = validateAbacusState(abacusState);
+    if (!validation.valid) {
+      return errorResponse(validation.error, 400);
+    }
+
+    // Fix: Validate expectedNumber
+    const expectedNum = Number(expectedNumber);
+    if (!Number.isInteger(expectedNum) || expectedNum < 0) {
+      return errorResponse('Expected number must be a non-negative integer', 400);
     }
 
     let calculatedNumber = 0;
@@ -29,16 +44,17 @@ export default async function handler(req) {
       calculatedNumber += digitValue * placeValue;
     }
 
-    const isCorrect = calculatedNumber === expectedNumber;
+    const isCorrect = calculatedNumber === expectedNum;
 
     return jsonResponse({
       isCorrect,
       calculatedNumber,
-      expectedNumber,
-      difference: Math.abs(calculatedNumber - expectedNumber)
+      expectedNumber: expectedNum,
+      difference: Math.abs(calculatedNumber - expectedNum)
     });
   } catch (error) {
-    return errorResponse(error.message, 500);
+    // Fix: Proper error handling
+    return errorResponse(error, 500);
   }
 }
 

@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import prisma from './prisma.js';
+import { getJwtSecret } from './env.js';
 
 export const authenticate = async (req) => {
   try {
@@ -9,7 +10,9 @@ export const authenticate = async (req) => {
       return { error: 'Authentication required', status: 401 };
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Fix: Validate JWT_SECRET before using
+    const jwtSecret = getJwtSecret();
+    const decoded = jwt.verify(token, jwtSecret);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, email: true, name: true, role: true, locale: true }
@@ -31,7 +34,9 @@ export const optionalAuth = async (req) => {
     
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // Fix: Validate JWT_SECRET before using
+        const jwtSecret = getJwtSecret();
+        const decoded = jwt.verify(token, jwtSecret);
         const user = await prisma.user.findUnique({
           where: { id: decoded.userId },
           select: { id: true, email: true, name: true, role: true, locale: true }

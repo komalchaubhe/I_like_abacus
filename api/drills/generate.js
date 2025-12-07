@@ -1,4 +1,6 @@
 import { handleCors, jsonResponse, errorResponse } from '../lib/response.js';
+import { validateClass, validateLevel } from '../lib/validate.js';
+import { parseRequestBody } from '../lib/url.js';
 
 const CLASS_PRESETS = {
   1: { min: 1, max: 50, digits: 2 },
@@ -28,8 +30,17 @@ export default async function handler(req) {
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    // Fix: Safe JSON parsing
+    const body = parseRequestBody(req.body);
     const { class: classNum = 1, level = 1 } = body;
+
+    // Fix: Input validation
+    if (!validateClass(classNum)) {
+      return errorResponse('Class must be a number between 1 and 8', 400);
+    }
+    if (!validateLevel(level)) {
+      return errorResponse('Level must be a number between 1 and 5', 400);
+    }
 
     const preset = CLASS_PRESETS[classNum] || CLASS_PRESETS[1];
     const multiplier = LEVEL_MULTIPLIERS[level] || 1.0;
@@ -46,7 +57,8 @@ export default async function handler(req) {
       digits: preset.digits
     });
   } catch (error) {
-    return errorResponse(error.message, 500);
+    // Fix: Proper error handling
+    return errorResponse(error, 500);
   }
 }
 

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import { handleCors, jsonResponse, errorResponse } from '../lib/response.js';
+import { getJwtSecret } from '../lib/env.js';
 
 export default async function handler(req) {
   const cors = handleCors(req);
@@ -17,7 +18,9 @@ export default async function handler(req) {
       return errorResponse('Authentication required', 401);
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Fix: Validate JWT_SECRET before using
+    const jwtSecret = getJwtSecret();
+    const decoded = jwt.verify(token, jwtSecret);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
@@ -35,6 +38,7 @@ export default async function handler(req) {
 
     return jsonResponse({ user });
   } catch (error) {
+    // Fix: Proper error handling
     return errorResponse('Invalid token', 401);
   }
 }

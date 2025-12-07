@@ -2,12 +2,18 @@ import prisma from '../../lib/prisma.js';
 import { parseJsonFields, stringifyJsonFields } from '../../lib/jsonHelper.js';
 import { authenticate, optionalAuth, requireOwnerOrAdmin } from '../../lib/auth.js';
 import { handleCors, jsonResponse, errorResponse } from '../../lib/response.js';
+import { extractIdFromUrl } from '../../lib/url.js';
+import { parseRequestBody } from '../../lib/url.js';
 
 export default async function handler(req) {
   const cors = handleCors(req);
   if (cors) return cors;
 
-  const id = req.url.split('/').pop().split('?')[0];
+  // Fix: Better URL parameter extraction
+  const id = extractIdFromUrl(req.url, /\/api\/chapters\/([^\/\?]+)/);
+  if (!id) {
+    return errorResponse('Invalid chapter ID', 400);
+  }
 
   if (req.method === 'GET') {
     try {
@@ -61,7 +67,8 @@ export default async function handler(req) {
     }
 
     try {
-      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      // Fix: Safe JSON parsing
+      const body = parseRequestBody(req.body);
       const { title, summary, level, isPublished, seq } = body;
 
       const updateData = {};
